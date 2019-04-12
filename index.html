@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+   <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+   <title>Vue Lab</title>
+   <link
+     rel="stylesheet"
+     href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css"
+     integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T"
+     crossorigin="anonymous"/>
+     <link rel="stylesheet" href="master.css">
+  </head>
+  <body>
+    <script
+      src="https://code.jquery.com/jquery-3.3.1.slim.min.js"
+      integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo"
+      crossorigin="anonymous"></script>
+    <script
+     src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js"
+     integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1"
+     crossorigin="anonymous"
+    ></script>
+    <script
+     src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"
+     integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM"
+     crossorigin="anonymous"
+    ></script>
+    <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+    <!-- all above scripts are necessary to load in bootsrap, vue, etc. -->
+    <center>
+      <div class="main">
+        <br>
+        <div class="jumbotron">
+          <div id="stopDiv">
+            <h4>Number of stops:</h4>
+            <input type="number" v-model.number="numStops">
+              <div class="card" style="width: 40rem;" v-for="numStops in filteredStops">
+                <div class="card-header">{{ numStops.name }}</div>
+                <ul class="list-group list-group-flush">
+                  <li class="list-group-item">{{ numStops.description }}</li>
+                  <li class="list-group-item">{{ numStops.distance.toFixed(1) }} mi</li>
+                </ul>
+              </div>
+          </div>
+        </div>
+        <br>
+      </div>
+    </center>
+
+    <script>
+
+    var stopDiv = new Vue({
+      el: '#stopDiv',
+      data: {
+        numStops : 10,
+        stops: [],
+        location: [],
+      },
+      computed : {
+        //copied from:
+        //https://stackoverflow.com/questions/1129216/sort-array-of-objects-by-string-property-value
+        //
+        filteredStops : function() {
+          this.stops.sort((x, y) => (x.distance > y.distance) ? 1 : -1)
+          return this.stops.slice(0,this.numStops);
+        }
+      }
+    }) //end stopper
+
+    fetch('https://utils.pauliankline.com/stops.json')
+      .then(function(response) {
+        return response.json();
+      })
+      .then(function(myJson) {
+        //console.log(JSON.stringify(myJson));
+        let stopVar = JSON.stringify(myJson);
+        stopDiv.stops = JSON.parse(stopVar);
+        for (var i = 0; i < 300; i++) {
+          console.log(stopDiv.stops[i].name);
+        }
+
+      });
+
+      //copied from
+      //https://developer.mozilla.org/en-US/docs/Web/API/Geolocation/watchPosition
+      //
+      let id = navigator.geolocation.watchPosition(function(position) {
+        stopDiv.location[0] = position.coords.latitude;
+        stopDiv.location[1] = position.coords.longitude;
+        let it = 0
+        while( it < stopDiv.stops.length){
+          stopDiv.stops[it].distance = calculate_distance(stopDiv.location[0], stopDiv.location[1], stopDiv.stops[it].lat, stopDiv.stops[it].lon)
+          it++;
+        }
+      });
+
+      //copied from
+      //https://stackoverflow.com/questions/18883601/function-to-calculate-distance-between-two-coordinates
+      //
+      function calculate_distance(lat1, lon1, lat2, lon2){
+        let radius = 3964;
+        let lon_d = ((lon2 - lon1) * (Math.PI / 180));
+        let lat_d = ((lat2 - lat1) * (Math.PI / 180));
+        let temp_dist = Math.sin(lat_d/2) * Math.sin(lat_d/2) + Math.cos(lat1*(Math.PI /180)) * Math.cos(lat2*(Math.PI/180)) * Math.sin(lon_d/2) * Math.sin(lon_d/2)
+        let x = 2 * Math.atan2(Math.sqrt(temp_dist), Math.sqrt(1-temp_dist));
+        let final_distance = radius * x;
+        return final_distance;
+      }
+
+    </script>
+  </body>
+</html>
